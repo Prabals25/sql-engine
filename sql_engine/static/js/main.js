@@ -16,6 +16,7 @@ function setupSubmitButton() {
         // Create the data object for the selected columns and their values
         let selectedColumns = [];
         let selectedValues = {};
+        let userQuery = $('#user-query').val().trim();  // Get the user query/instructions
 
         // Collect values from the checked checkboxes
         $('#column-checkboxes input:checked').each(function() {
@@ -53,11 +54,13 @@ function setupSubmitButton() {
 
         console.log("HI : Selected Columns:", selectedColumns);
         console.log("HI : Selected Values:", selectedValues);
+        console.log("User Query:", userQuery);
 
         // Construct JSON to send to the backend
         let data = {
             columns: selectedColumns,
-            selected_values: selectedValues
+            selected_values: selectedValues,
+            user_query: userQuery  // Add the user query to the data object
         };
 
         // Send JSON data to the new Flask route
@@ -68,14 +71,23 @@ function setupSubmitButton() {
             data: JSON.stringify(data),
             success: function(response) {
                 if (response.success) {
-                    alert('Data submitted successfully!');
                     console.log('Backend Response:', response);
+                    
+                    // Show confirmation message instead of results
+                    const container = $('#results-container');
+                    container.html(`
+                        <div class="alert alert-success">
+                            <strong>Success!</strong> Your selections and instructions have been sent to the backend.
+                            <br>
+                            <small class="text-muted">You can now plan your next steps.</small>
+                        </div>
+                    `);
                 } else {
-                    alert('Error: ' + response.error);
+                    showError('Error: ' + response.error);
                 }
             },
             error: function(xhr, status, error) {
-                alert('Error submitting data: ' + error);
+                showError('Error submitting data: ' + error);
             }
         });
     });
@@ -300,6 +312,54 @@ function renderValueDropdown(columnName) {
 }
 
 function showError(message) {
-const container = $('#value-selection-container');
-container.html(`<div class="alert alert-danger">${message}</div>`);
+    const container = $('#results-container');
+    container.html(`<div class="alert alert-danger">${message}</div>`);
+}
+
+// Function to display results in the main content area
+function displayResults(results, userQuery) {
+    const container = $('#results-container');
+    container.empty();
+    
+    if (!results || !results.data || results.data.length === 0) {
+        container.html('<p class="text-muted">No results found for your query.</p>');
+        return;
+    }
+    
+    // Create result summary with user query if provided
+    const summary = $('<div>').addClass('mb-3 alert alert-info');
+    let summaryHTML = `<strong>Results:</strong> Found ${results.count} records.`;
+    
+    if (userQuery) {
+        summaryHTML += `<br><strong>Your Instructions:</strong> "${userQuery}"`;
+    }
+    
+    summary.html(summaryHTML);
+    
+    // Create table
+    const table = $('<table>').addClass('table table-striped table-hover');
+    const thead = $('<thead>').addClass('table-light');
+    const tbody = $('<tbody>');
+    
+    // Add header row
+    const headerRow = $('<tr>');
+    results.columns.forEach(column => {
+        headerRow.append($('<th>').text(column));
+    });
+    thead.append(headerRow);
+    
+    // Add data rows
+    results.data.forEach(row => {
+        const dataRow = $('<tr>');
+        results.columns.forEach(column => {
+            dataRow.append($('<td>').text(row[column] !== null ? row[column] : ''));
+        });
+        tbody.append(dataRow);
+    });
+    
+    // Assemble table
+    table.append(thead, tbody);
+    
+    // Add to container
+    container.append(summary, table);
 }

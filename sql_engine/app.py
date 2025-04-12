@@ -127,18 +127,25 @@ def submit_selections():
         # Extract the columns and selected values
         selected_columns = data.get('columns', [])
         selected_values = data.get('selected_values', {})
+        user_query = data.get('user_query', '')  # Get user's additional instructions or query
 
         # For now, print the selections
         print("Selected Columns:", selected_columns)
         print("Selected Values:", selected_values)
+        print("User Query:", user_query)
 
         for x,v in selected_values.items():
             print(x,v)
 
-        # You can process this data further here, e.g., perform database queries based on the selected values
-
-        # Respond back with success
-        return jsonify({'success': True, 'message': 'Selections received successfully!'}), 200
+        # Build query to get data based on selections
+            
+            # Return the results as JSON
+            return jsonify({
+                'success': True, 
+                'message': 'Selections received successfully!',
+                'user_query': user_query,  # Include the user query in the response
+            }), 200
+            
     except Exception as e:
         print(f"Error in submit-selections: {str(e)}")  # Log the error
         return jsonify({'success': False, 'error': str(e)}), 500
