@@ -2,11 +2,84 @@ let schemaData = null;
 let selectedTable = null;
 let uniqueValues = {};
 
-$(document).ready(function () {
-loadSchema();
-loadUniqueValues();
-setupEventListeners();
+$(document).ready(function() {
+    loadSchema();
+    loadUniqueValues();
+    setupEventListeners();
+    setupSubmitButton();  // New function to handle form submission
 });
+
+function setupSubmitButton() {
+    $('#submit-btn').click(function() {
+        console.log("Submit button clicked!");
+        
+        // Create the data object for the selected columns and their values
+        let selectedColumns = [];
+        let selectedValues = {};
+
+        // Collect values from the checked checkboxes
+        $('#column-checkboxes input:checked').each(function() {
+            let columnName = $(this).attr('id').replace('col-', '');
+            let isCategorical = $(this).attr('data-type') === 'categorical';
+            
+            console.log("Processing column:", columnName, "isCategorical:", isCategorical);
+            
+            selectedColumns.push(columnName);
+            
+            // Handle categorical columns (dropdowns)
+            if (isCategorical) {
+                let dropdownValues = [];
+                // Get selected values from the dropdown
+                $(`#value-dropdown-${columnName} select option:selected`).each(function() {
+                    dropdownValues.push($(this).val());
+                });
+                if (dropdownValues.length > 0) {
+                    selectedValues[columnName] = dropdownValues;
+                }
+
+            } 
+            // Handle non-categorical columns (text inputs)
+            else {
+                let inputValue = $(`#text-input-${columnName}`).val();
+                if (inputValue && inputValue.trim() !== '') {
+                    selectedValues[columnName] = inputValue;
+                }
+                else {
+                    // Include empty text fields with an empty string
+                    selectedValues[columnName] = "";
+                }
+            }
+        });
+
+        console.log("HI : Selected Columns:", selectedColumns);
+        console.log("HI : Selected Values:", selectedValues);
+
+        // Construct JSON to send to the backend
+        let data = {
+            columns: selectedColumns,
+            selected_values: selectedValues
+        };
+
+        // Send JSON data to the new Flask route
+        $.ajax({
+            url: '/api/submit-selections',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    alert('Data submitted successfully!');
+                    console.log('Backend Response:', response);
+                } else {
+                    alert('Error: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Error submitting data: ' + error);
+            }
+        });
+    });
+}
 
 function loadSchema() {
 $.ajax({
@@ -38,7 +111,21 @@ $.ajax({
     success: function (response) {
         if (response.success) {
             uniqueValues = response.unique_values;
-            console.log('Unique values loaded:', uniqueValues);
+            
+            // Log each categorical column's unique values
+            console.log('----- Unique Values Loaded -----');
+            for (const column in uniqueValues) {
+                const values = uniqueValues[column];
+                const uniqueCount = new Set(values).size;
+                console.log(`${column}: ${uniqueCount} unique values out of ${values.length} total`);
+                
+                // If there are duplicates, show the first few
+                if (uniqueCount < values.length) {
+                    console.log(`Warning: ${column} has duplicate values!`);
+                    // Ensure uniqueness going forward
+                    uniqueValues[column] = [...new Set(values)];
+                }
+            }
         } else {
             showError('Failed to load unique values: ' + response.error);
         }
@@ -102,6 +189,7 @@ schemaData[selectedTable].forEach(column => {
     const checkbox = $('<input>')
         .attr('type', 'checkbox')
         .attr('id', `col-${columnName}`)
+        .attr('data-type', isCategorical ? 'categorical' : 'non-categorical')
         .addClass('form-check-input me-2');
     const label = $('<label>')
         .attr('for', `col-${columnName}`)
@@ -136,6 +224,7 @@ schemaData[selectedTable].forEach(column => {
             }
         } else {
             if (isCategorical) {
+                // Make sure the dropdown is completely removed, not just hidden
                 $(`#value-dropdown-${columnName}`).remove();
             } else {
                 inputContainer.hide();
@@ -146,31 +235,68 @@ schemaData[selectedTable].forEach(column => {
 }
 
 function renderValueDropdown(columnName) {
-const container = $('#value-selection-container');
-const dropdownContainer = $(`<div id="value-dropdown-${columnName}" class="mb-4">`);
-
-if (uniqueValues[columnName]) {
-    const values = uniqueValues[columnName];
-
+    // First, remove any existing dropdown for this column
+    $(`#value-dropdown-${columnName}`).remove();
+    
+    // Get the container
+    const container = $('#value-selection-container');
+    
+    // Only proceed if we have unique values for this column
+    if (!uniqueValues[columnName] || uniqueValues[columnName].length === 0) {
+        console.log(`No unique values found for ${columnName}`);
+        return;
+    }
+    
+    console.log(`Rendering dropdown for ${columnName} with values:`, uniqueValues[columnName]);
+    
+    // Create a new container
+    const dropdownContainer = $(`<div id="value-dropdown-${columnName}" class="mb-4">`);
+    
+    // Create label
     const label = $('<label>')
         .addClass('form-label fw-bold')
         .text(columnName.charAt(0).toUpperCase() + columnName.slice(1));
-
+    
+    // Create the select element
     const dropdown = $('<select>')
-        .addClass('selectpicker form-control')
+        .addClass('form-control selectpicker')  // Add both classes
+        .attr('id', `select-${columnName}`)
         .attr('multiple', 'multiple')
         .attr('data-live-search', 'true')
         .attr('title', 'Select values');
-
-    values.forEach(value => {
-        dropdown.append($('<option>').val(value).text(value));
+    
+    // Get unique values using a Set
+    const uniqueValuesArray = [...new Set(uniqueValues[columnName])];
+    
+    // Sort the values for better usability
+    uniqueValuesArray.sort();
+    
+    // Log the unique values being added
+    console.log(`Adding ${uniqueValuesArray.length} unique options for ${columnName}`);
+    
+    // Add options to the dropdown
+    uniqueValuesArray.forEach(value => {
+        dropdown.append(
+            $('<option>')
+                .val(value)
+                .text(value)
+        );
     });
-
+    
+    // Append elements to the container
     dropdownContainer.append(label, dropdown);
     container.append(dropdownContainer);
-
-    dropdown.selectpicker('refresh');
-}
+    
+    // Initialize the bootstrap-select plugin
+    try {
+        dropdown.selectpicker({
+            liveSearch: true,
+            actionsBox: true,
+            selectedTextFormat: 'count > 2'
+        });
+    } catch (e) {
+        console.error('Error initializing selectpicker:', e);
+    }
 }
 
 function showError(message) {

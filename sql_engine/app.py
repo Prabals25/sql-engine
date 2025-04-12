@@ -14,7 +14,6 @@ app = Flask(__name__)
 CORS(app)
 
 # PostgreSQL database configuration
-# Using the provided PostgreSQL connection URL with proper format
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://prabal@localhost:5432/prabal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -70,7 +69,11 @@ def init_db():
                 # Store unique values only for categorical columns
                 for column in ['region', 'rep', 'item']:
                     result = conn.execute(text(f"SELECT DISTINCT {column} FROM sampledb ORDER BY {column}"))
-                    column_unique_values[column] = [str(row[0]) for row in result.fetchall()]
+                    values = [str(row[0]) for row in result.fetchall()]
+                    # Print the values to verify they are unique
+                    print(f"Unique {column} values: {values}")
+                    # Store unique values as a list with no duplicates
+                    column_unique_values[column] = list(set(values))
                 
                 conn.commit()
             
@@ -115,54 +118,29 @@ def get_unique_values():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/column-stats', methods=['POST'])
-def get_column_stats():
-    """Get statistics for selected columns"""
+@app.route('/api/submit-selections', methods=['POST'])
+def submit_selections():
+    """Accept selections from the frontend and handle them (extendable)"""
     try:
-        data = request.json
-        columns = data.get('columns', [])
+        data = request.get_json()  # The data sent from the frontend
+
+        # Extract the columns and selected values
+        selected_columns = data.get('columns', [])
         selected_values = data.get('selected_values', {})
-        
-        if not columns:
-            return jsonify({'success': False, 'error': 'Columns are required'}), 400
-        
-        # Build query to get statistics
-        where_clauses = []
-        for column, values in selected_values.items():
-            if values:
-                where_clauses.append(f"{column} IN ({','.join(['%s'] * len(values))})")
-        
-        query = f"SELECT {', '.join(columns)} FROM sampledb"
-        if where_clauses:
-            query += " WHERE " + " AND ".join(where_clauses)
-        query += " LIMIT 1000"
-        
-        with db.engine.connect() as conn:
-            df = pd.read_sql(query, conn, params=list(selected_values.values()))
-        
-        stats = {}
-        for column in columns:
-            # Convert numpy types to Python native types
-            col_stats = {
-                'unique_values': int(df[column].nunique()),
-                'null_count': int(df[column].isnull().sum()),
-                'sample_values': [str(val) for val in df[column].dropna().head(5).tolist()]
-            }
-            
-            # Add numerical statistics if column is numeric
-            if pd.api.types.is_numeric_dtype(df[column]):
-                col_stats.update({
-                    'min': float(df[column].min()),
-                    'max': float(df[column].max()),
-                    'mean': float(df[column].mean()),
-                    'median': float(df[column].median())
-                })
-            
-            stats[column] = col_stats
-        
-        return jsonify({'success': True, 'stats': stats})
+
+        # For now, print the selections
+        print("Selected Columns:", selected_columns)
+        print("Selected Values:", selected_values)
+
+        for x,v in selected_values.items():
+            print(x,v)
+
+        # You can process this data further here, e.g., perform database queries based on the selected values
+
+        # Respond back with success
+        return jsonify({'success': True, 'message': 'Selections received successfully!'}), 200
     except Exception as e:
-        print(f"Error in column-stats: {str(e)}")  # Add error logging
+        print(f"Error in submit-selections: {str(e)}")  # Log the error
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
