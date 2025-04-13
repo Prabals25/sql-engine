@@ -8,18 +8,20 @@ from dotenv import load_dotenv
 from datetime import datetime
 from models.llm_ollama import *
 from utils.query_logger import QueryLogger
+from config import config
 
 # Load environment variables
 load_dotenv()
 
+# Initialize Flask app
 app = Flask(__name__)
+
+# Configure the app based on environment
+config_name = os.getenv('FLASK_CONFIG', 'default')
+app.config.from_object(config[config_name])
+
+# Initialize extensions
 CORS(app)
-
-# Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://prabal@localhost:5432/prabal'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
 # Initialize query logger

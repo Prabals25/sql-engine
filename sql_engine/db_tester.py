@@ -9,7 +9,7 @@ from sqlalchemy import create_engine,text
 # LIMIT 1
 # '''
 
-query = '''SELECT item, SUM(units) AS total_items_sold FROM sampledb WHERE region = 'West' GROUP BY item ORDER BY total_items_sold DESC LIMIT 1'''
+query = '''SELECT region, item, SUM(T.total) AS total_sales FROM sampledb AS T WHERE T.region IN ('East', 'Central', 'West') AND T.item IN ('Binder', 'Pen Set') GROUP BY region, item'''
 
 def execute_sql_query(query):
     """
