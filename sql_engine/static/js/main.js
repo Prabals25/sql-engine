@@ -73,15 +73,72 @@ function setupSubmitButton() {
                 if (response.success) {
                     console.log('Backend Response:', response);
                     
-                    // Show confirmation message instead of results
+                    // Show SQL query and results
                     const container = $('#results-container');
-                    container.html(`
-                        <div class="alert alert-success">
-                            <strong>Success!</strong> Your selections and instructions have been sent to the backend.
-                            <br>
-                            <small class="text-muted">You can now plan your next steps.</small>
+                    let resultsHtml = `
+                        <div class="alert alert-success mb-3">
+                            <strong>Success!</strong> ${response.message}
                         </div>
-                    `);
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Generated SQL Query</h5>
+                            </div>
+                            <div class="card-body">
+                                <pre class="bg-light p-3 rounded"><code>${response.sql_query || 'No SQL query available'}</code></pre>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add results table if data is available
+                    if (response.data && response.data.length > 0) {
+                        resultsHtml += `
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0">Query Results (${response.count} rows)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                        `;
+
+                        // Add column headers
+                        response.columns.forEach(column => {
+                            resultsHtml += `<th>${column}</th>`;
+                        });
+
+                        resultsHtml += `
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                        `;
+
+                        // Add data rows
+                        response.data.forEach(row => {
+                            resultsHtml += '<tr>';
+                            response.columns.forEach(column => {
+                                resultsHtml += `<td>${row[column] || ''}</td>`;
+                            });
+                            resultsHtml += '</tr>';
+                        });
+
+                        resultsHtml += `
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultsHtml += `
+                            <div class="alert alert-info">
+                                No results found for this query.
+                            </div>
+                        `;
+                    }
+
+                    container.html(resultsHtml);
                 } else {
                     showError('Error: ' + response.error);
                 }
@@ -190,9 +247,15 @@ container.empty();
 
 if (!selectedTable || !schemaData[selectedTable]) return;
 
-schemaData[selectedTable].forEach(column => {
+// Filter to only show categorical columns
+const categoricalColumns = schemaData[selectedTable].filter(column => {
     const columnName = column.name;
-    const isCategorical = ['region', 'rep', 'item'].includes(columnName);
+    return ['region', 'rep', 'item'].includes(columnName);
+});
+
+categoricalColumns.forEach(column => {
+    const columnName = column.name;
+    const isCategorical = true; // Since we've already filtered for categorical columns
 
     const checkboxDiv = $('<div>').addClass('column-checkbox mb-3 border-bottom pb-2');
     const checkboxRow = $('<div>').addClass('d-flex justify-content-between align-items-center');
