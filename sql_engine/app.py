@@ -180,11 +180,13 @@ def process_user_query(user_query, columns, selected_values):
         if not initial_response['success']:
             return initial_response
             
-        print("Initial query: ", initial_response['sql_query'])
+        initial_query = initial_response['sql_query']  # Store the initial query
+        print("Initial query: ", initial_query)
+        
         # Create query object for validation
         query_obj = llm.create_query_object(
             user_query,
-            initial_response['sql_query'],
+            initial_query,
             columns,
             selected_values
         )
@@ -196,6 +198,9 @@ def process_user_query(user_query, columns, selected_values):
 
         print("Final query: ", final_response['sql_query'])
         print("comments: ", final_response['comments'])
+        
+        # Add initial query to the response
+        final_response['initial_query'] = initial_query
         return final_response
         
     except Exception as e:
@@ -204,7 +209,8 @@ def process_user_query(user_query, columns, selected_values):
             'success': False,
             'error': str(e),
             'comments': 'Error occurred during query processing',
-            'sql_query': ''
+            'sql_query': '',
+            'initial_query': ''
         }
 
 @app.route('/api/submit-selections', methods=['POST'])
@@ -231,6 +237,7 @@ def submit_selections():
             user_query=user_query,
             selected_columns=selected_columns,
             selected_values=selected_values,
+            initial_query=query_response.get('initial_query', ''),
             final_query=query_response.get('sql_query', ''),
             comments=query_response.get('comments', ''),
             error=query_response.get('error', '')
@@ -269,6 +276,7 @@ def submit_selections():
             user_query=user_query,
             selected_columns=selected_columns,
             selected_values=selected_values,
+            initial_query='',
             final_query='',
             comments='',
             error=str(e)

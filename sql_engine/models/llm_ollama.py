@@ -131,6 +131,7 @@ class OllamaLLM:
             return {
                 'success': True,
                 'sql_query': response['updated_sql'],
+                'initial_query': query_object['generated_sql'],
                 'comments': response['comments']
             }
             
