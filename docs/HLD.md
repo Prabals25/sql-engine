@@ -66,6 +66,92 @@ The system consists of a web-based frontend that communicates with a backend ser
   );
   ```
 
+#### 2.2.4 API Endpoints
+
+##### Submit Query API
+- **Endpoint**: `/api/submit-selections`
+- **Method**: POST
+- **Request Body**:
+  ```json
+  {
+    "query": "string",          // Natural language query
+    "columns": [],              // Array of selected column names
+    "selected_values": {        // Object with column-value mappings
+      "column1": ["value1", "value2"]
+    },
+    "table_name": "string"      // Name of the table to query
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "status": "success/error",
+    "sql_query": "string",      // Generated SQL query
+    "results": [],              // Query results (if successful)
+    "error": "string"           // Error message (if failed)
+  }
+  ```
+- **Functionality**:
+  1. Validates input parameters
+  2. Generates SQL query using LLM
+  3. Executes query against database
+  4. Returns results or error message
+  5. Logs query execution details
+
+##### Schema Information API
+- **Endpoint**: `/api/schema`
+- **Method**: GET
+- **Response**:
+  ```json
+  {
+    "columns": ["column1", "column2"],
+    "types": ["type1", "type2"]
+  }
+  ```
+
+##### Unique Values API
+- **Endpoint**: `/api/unique-values`
+- **Method**: GET
+- **Response**:
+  ```json
+  {
+    "column_name": ["value1", "value2"]
+  }
+  ```
+
+### 2.2.5 LLM Configuration
+- **Models Used**:
+  - Llama 3.2 (for initial SQL generation)
+  - Llama 3.2 (for SQL validation)
+- **Prompt Templates**:
+  - SQL Generation Prompt: Includes table schema, column information, and user query
+  - SQL Validation Prompt: Includes generated SQL, table schema, and validation rules
+- **Model Parameters**:
+  - Temperature: 0.7
+  - Max Tokens: 2048
+  - Top P: 0.9
+
+### 2.2.6 Query History
+- **Storage**: PostgreSQL database
+- **Table Structure**:
+  ```sql
+  CREATE TABLE query_history (
+      id SERIAL PRIMARY KEY,
+      timestamp TIMESTAMP,
+      natural_query TEXT,
+      generated_sql TEXT,
+      execution_time FLOAT,
+      success BOOLEAN,
+      error_message TEXT
+  );
+  ```
+- **Features**:
+  - Automatic logging of all queries
+  - Success/failure tracking
+  - Execution time monitoring
+  - Error message storage
+  - Query result caching
+
 ## 3. Data Flow
 
 ### 3.1 Query Processing Flow
@@ -96,14 +182,12 @@ The system consists of a web-based frontend that communicates with a backend ser
 
 ### 4.2 Query Validation
 - Validates generated SQL
-- Ensures query safety
 - Optimizes query performance
 - Uses Ollama LLM for validation
 
 ### 4.3 Data Filtering
 - Column selection
 - Value filtering
-- Dynamic filter generation
 - Unique value retrieval
 
 ### 4.4 Logging and Monitoring
@@ -113,44 +197,6 @@ The system consists of a web-based frontend that communicates with a backend ser
 - Log file management
 
 ## 5. API Endpoints
-
-### 5.1 Query Processing
-- **POST /api/submit-selections**
-  - Accepts user query and selections
-  - Returns query results
-  - Request format:
-    ```json
-    {
-        "query": "natural language query",
-        "columns": ["column1", "column2"],
-        "selected_values": {
-            "column1": ["value1", "value2"]
-        }
-    }
-    ```
-
-### 5.2 Schema Information
-- **GET /api/schema**
-  - Returns database schema information
-  - Used for column selection
-  - Response format:
-    ```json
-    {
-        "columns": ["column1", "column2"],
-        "types": ["type1", "type2"]
-    }
-    ```
-
-### 5.3 Unique Values
-- **GET /api/unique-values**
-  - Returns unique values for categorical columns
-  - Used for value filtering
-  - Response format:
-    ```json
-    {
-        "column_name": ["value1", "value2"]
-    }
-    ```
 
 ## 6. Error Handling
 
