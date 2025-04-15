@@ -3,7 +3,7 @@
 ## 1. Introduction
 
 ### 1.1 Purpose
-Power Query is a natural language to SQL query conversion system that allows users to interact with databases using plain English. The system uses Large Language Models (LLMs) to generate and validate SQL queries based on user input and selections.
+Power Query is a natural language to SQL query conversion system that allows users to interact with databases using plain English. The system uses Large Language Models (LLMs) to generate and validate SQL queries based on user input and selections. MOAT : 2 LLMs (Just Llama 3.2) sequential decomposition leading to excellent results. Agentic decomposition can result in excellent results.
 
 ### 1.2 System Overview
 The system consists of a web-based frontend that communicates with a backend service. The backend uses LLMs to process natural language queries and generate SQL queries, which are then executed against a PostgreSQL database.
@@ -202,8 +202,7 @@ The system consists of a web-based frontend that communicates with a backend ser
 ### 9.1 Requirements
 - Python 3.8+
 - PostgreSQL 12+
-- Node.js 14+
-- Ollama LLM service
+- Ollama LLM service (hosted locally)
 - Required Python packages (requirements.txt):
   ```
   flask
@@ -238,11 +237,12 @@ OLLAMA_HOST=http://localhost:11434
 ## 11. Future Enhancements
 
 ### 11.1 Planned Features
-- Query history
-- Saved queries
-- Advanced filtering
-- Custom query templates
-- Multi-database support
+- Query/Chat history.
+- Database automation.
+- Vector DB Integrating and Query caching.
+- Multi Agentic Decomposition of initial queries.
+- Implementing guardrails in SQL queries.
+- E2E deployment on cloud.
 
 ### 11.2 Scalability
 - Horizontal scaling
@@ -252,4 +252,10 @@ OLLAMA_HOST=http://localhost:11434
 
 ## 12. Conclusion
 
-This HLD document provides a comprehensive overview of the Power Query system architecture and design. The system is designed to be scalable, maintainable, and user-friendly while ensuring robust query generation and execution capabilities. 
+This HLD document provides a comprehensive overview of the Power Query system architecture and design. The system is designed to be scalable, maintainable, and user-friendly while ensuring robust query generation and execution capabilities.
+
+## 13. References
+
+1. [A Survey on Employing Large Language Models for Text-to-SQL Tasks](https://arxiv.org/pdf/2407.15186)
+2. [https://arxiv.org/pdf/2312.11242](https://arxiv.org/pdf/2312.11242)
+3. [Evaluating and Enhancing LLMs for Multi-turnText-to-SQL with Multiple Question Types](https://arxiv.org/pdf/2412.17867) 
