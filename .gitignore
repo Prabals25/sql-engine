@@ -44,3 +44,8 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db 
+
+# Jupyter Notebooks
+.Models/create_model.ipynb
+.Models/run_model.ipynb
+.Models/create_model.ipynb

@@ -4,11 +4,16 @@ from flask_cors import CORS
 import pandas as pd
 from sqlalchemy import inspect, text, create_engine
 import os
+import sys
 from dotenv import load_dotenv
 from datetime import datetime
 from models.llm_ollama import *
 from utils.query_logger import QueryLogger
 from config import config
+
+# Add parent directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from create_models import ModelInitializer
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +31,15 @@ db = SQLAlchemy(app)
 
 # Initialize query logger
 query_logger = QueryLogger()
+
+# Initialize model initializer
+model_initializer = ModelInitializer()
+
+# Check and initialize models
+success, message = model_initializer.initialize_models()
+if not success:
+    print(f"Warning: Model initialization failed: {message}")
+    print("The application may not function properly without the required models.")
 
 # Initialize LLM models
 llm = OllamaLLM()

@@ -140,11 +140,21 @@ function setupSubmitButton() {
 
                     container.html(resultsHtml);
                 } else {
-                    showError('Error: ' + response.error);
+                    showError(response.error || 'An error occurred while processing your query.');
                 }
             },
             error: function(xhr, status, error) {
-                showError('Error submitting data: ' + error);
+                // Try to get the error message from the response
+                let errorMessage = 'An error occurred while processing your query.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.error) {
+                        errorMessage = response.error;
+                    }
+                } catch (e) {
+                    // If we can't parse the response, use the default error message
+                }
+                showError(errorMessage);
             }
         });
     });
@@ -376,7 +386,14 @@ function renderValueDropdown(columnName) {
 
 function showError(message) {
     const container = $('#results-container');
-    container.html(`<div class="alert alert-danger">${message}</div>`);
+    container.html(`
+        <div class="alert alert-danger">
+            <h5 class="alert-heading">Error</h5>
+            <p>${message}</p>
+            <hr>
+            <p class="mb-0">Please try again with a valid database query.</p>
+        </div>
+    `);
 }
 
 // Function to display results in the main content area

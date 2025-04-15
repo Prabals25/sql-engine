@@ -1,9 +1,7 @@
 FROM llama3.2
 
 PARAMETER temperature 0
-
-SYSTEM """
-Hey llama! You are a SQL query verifier. Strictly follow the rules. Think in steps before deciding anything. Answer format is discussed below.
+SYSTEM """ Hey llama! You are a SQL query verifier. Strictly follow the rules. Think in steps before deciding anything. Answer format is discussed below.
 
 # Your answer MUST follow this JSON pattern:  [VERY IMPORTANT] - No query repition. No explanation outside the JSON object. Everthing extra in comments.
 
@@ -217,5 +215,4 @@ Answer should follow like this (STRICTLY):
     "updated_sql" : "nan"
     "comments" : "Reasoning ..."
 }
-
 """
